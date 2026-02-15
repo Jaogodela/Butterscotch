@@ -1,3 +1,5 @@
+import org.gradle.internal.os.OperatingSystem
+
 plugins {
     kotlin("jvm") version "2.2.21"
     kotlin("plugin.serialization") version "2.2.21"
@@ -13,7 +15,14 @@ version = "1.0-SNAPSHOT"
 
 val lwjglVersion = "3.4.1"
 val jomlVersion = "1.10.8"
-val lwjglNatives = "natives-linux"
+
+val lwjglNatives = if (OperatingSystem.current().isWindows) {
+    "natives-windows"
+} else if (OperatingSystem.current().isMacOsX) {
+    "natives-macos"
+} else {
+    "natives-linux"
+}
 
 repositories {
     mavenCentral()
@@ -26,10 +35,12 @@ dependencies {
     implementation("org.lwjgl", "lwjgl-glfw")
     implementation("org.lwjgl", "lwjgl-opengl")
     implementation("org.lwjgl", "lwjgl-stb")
+    
     implementation("org.lwjgl", "lwjgl", classifier = lwjglNatives)
     implementation("org.lwjgl", "lwjgl-glfw", classifier = lwjglNatives)
     implementation("org.lwjgl", "lwjgl-opengl", classifier = lwjglNatives)
     implementation("org.lwjgl", "lwjgl-stb", classifier = lwjglNatives)
+
     implementation("org.joml", "joml", jomlVersion)
     implementation("com.github.ajalt.clikt:clikt:4.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
