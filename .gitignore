@@ -131,3 +131,6 @@ cache/
 #Loritta's Config Files
 emotes.conf
 loritta.conf
+
+#Game file
+/undertale/
