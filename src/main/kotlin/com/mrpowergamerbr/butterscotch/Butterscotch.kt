@@ -1,5 +1,6 @@
 package com.mrpowergamerbr.butterscotch
 
+import com.mrpowergamerbr.butterscotch.audio.AudioEngine
 import com.mrpowergamerbr.butterscotch.builtin.registerBuiltins
 import com.mrpowergamerbr.butterscotch.console.DebugConsole
 import com.mrpowergamerbr.butterscotch.data.FormReader
@@ -47,6 +48,7 @@ class Butterscotch(
     private var window: Long = 0
     private lateinit var renderer: Renderer
     private lateinit var runner: GameRunner
+    private lateinit var audio: AudioEngine
     private val headless = screenshotAtFrames.isNotEmpty()
     private var framebufferScaleX = 1.0f
     private var framebufferScaleY = 1.0f
@@ -99,13 +101,15 @@ class Butterscotch(
         renderer.framebufferScaleY = framebufferScaleY
         renderer.initialize()
 
+        audio = AudioEngine(gameData)
+
         val vm = VM(gameData)
         registerBuiltins(vm)
 
         // "Just to add on to this...
         // Game Maker only uses the same random seed when running the game through the IDE. Once you compile it, the seed will be truly random."
         // https://www.reddit.com/r/gamemaker/comments/9btry9/random_object_generation_always_gives_same_result/
-        runner = GameRunner(gameData, vm, renderer, rngSeed ?: System.nanoTime(), rngSeed != null)
+        runner = GameRunner(gameData, vm, renderer, audio, rngSeed ?: System.nanoTime(), rngSeed != null)
         if (debug) {
             console = DebugConsole(runner, windowWidth, windowHeight)
         }
@@ -138,6 +142,7 @@ class Butterscotch(
         }
 
         console?.dispose()
+        audio.dispose()
         renderer.dispose()
         Callbacks.glfwFreeCallbacks(window)
         GLFW.glfwDestroyWindow(window)

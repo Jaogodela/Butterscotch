@@ -504,26 +504,300 @@ fun registerBuiltins(vm: VM) {
     f["ini_write_real"] = { _, _ -> GMLValue.ZERO }
     f["ini_write_string"] = { _, _ -> GMLValue.ZERO }
 
-    // ========== Audio stubs ==========
-    for (name in listOf(
-        "audio_play_sound", "audio_stop_sound", "audio_stop_all",
-        "audio_is_playing", "audio_sound_gain", "audio_sound_pitch",
-        "audio_group_load", "audio_group_is_loaded",
-        "audio_create_stream", "audio_destroy_stream",
-        "audio_master_gain",
-        "sound_play", "sound_stop", "sound_stop_all",
-        "sound_is_playing", "sound_volume", "sound_loop",
-    )) {
-        f[name] = { _, _ -> GMLValue.ZERO }
+    // ========== Audio ==========
+    f["audio_play_sound"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId == null) {
+            GMLValue.ZERO
+        } else {
+            val loop = args.getOrNull(2)?.toBool() ?: false
+            GMLValue.of(v.runner.audio.playSound(soundId, loop).toDouble())
+        }
+    }
+    f["audio_stop_sound"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId != null) {
+            v.runner.audio.stopSound(soundId)
+        }
+        GMLValue.ZERO
+    }
+    f["audio_stop_all"] = { v, _ ->
+        v.runner.audio.stopAll()
+        GMLValue.ZERO
+    }
+    f["audio_pause_all"] = { v, _ ->
+        v.runner.audio.pauseAll()
+        GMLValue.ZERO
+    }
+    f["audio_resume_all"] = { v, _ ->
+        v.runner.audio.resumeAll()
+        GMLValue.ZERO
+    }
+    f["audio_pause_sound"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId != null) {
+            v.runner.audio.pauseSound(soundId)
+        }
+        GMLValue.ZERO
+    }
+    f["audio_resume_sound"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId != null) {
+            v.runner.audio.resumeSound(soundId)
+        }
+        GMLValue.ZERO
+    }
+    f["audio_is_playing"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId == null) {
+            GMLValue.FALSE
+        } else {
+            GMLValue.of(v.runner.audio.isSoundPlaying(soundId))
+        }
+    }
+    f["audio_sound_gain"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId != null) {
+            val gain = args.getOrNull(1)?.toReal()?.toFloat() ?: 1.0f
+            v.runner.audio.setSoundGain(soundId, gain)
+        }
+        GMLValue.ZERO
+    }
+    f["audio_sound_get_gain"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId == null) {
+            GMLValue.ZERO
+        } else {
+            GMLValue.of(v.runner.audio.getSoundGain(soundId).toDouble())
+        }
+    }
+    f["audio_sound_pitch"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId != null) {
+            val pitch = args.getOrNull(1)?.toReal()?.toFloat() ?: 1.0f
+            v.runner.audio.setSoundPitch(soundId, pitch)
+        }
+        GMLValue.ZERO
+    }
+    f["audio_sound_get_pitch"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId == null) {
+            GMLValue.of(1.0)
+        } else {
+            GMLValue.of(v.runner.audio.getSoundPitch(soundId).toDouble())
+        }
+    }
+    f["audio_sound_get_track_position"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId == null) {
+            GMLValue.ZERO
+        } else {
+            GMLValue.of(v.runner.audio.getTrackPosition(soundId).toDouble())
+        }
+    }
+    f["audio_sound_set_track_position"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId != null) {
+            val pos = args.getOrNull(1)?.toReal()?.toFloat() ?: 0.0f
+            v.runner.audio.setTrackPosition(soundId, pos)
+        }
+        GMLValue.ZERO
+    }
+    f["audio_group_load"] = { _, _ -> GMLValue.of(1.0) }
+    f["audio_group_is_loaded"] = { _, _ -> GMLValue.of(1.0) }
+    f["audio_create_stream"] = { v, args ->
+        val name = args.getOrNull(0)?.toStr()
+        if (name == null) {
+            GMLValue.ZERO
+        } else {
+            GMLValue.of(v.runner.audio.createStream(name).toDouble())
+        }
+    }
+    f["audio_destroy_stream"] = { v, args ->
+        val handle = args.getOrNull(0)?.toInt()
+        if (handle != null) {
+            v.runner.audio.destroyStream(handle)
+        }
+        GMLValue.ZERO
+    }
+    f["audio_master_gain"] = { v, args ->
+        val gain = args.getOrNull(0)?.toReal()?.toFloat() ?: 1.0f
+        v.runner.audio.setMasterGain(gain)
+        GMLValue.ZERO
+    }
+    f["sound_play"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId == null) {
+            GMLValue.ZERO
+        } else {
+            GMLValue.of(v.runner.audio.playSound(soundId, false).toDouble())
+        }
+    }
+    f["sound_stop"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId != null) {
+            v.runner.audio.stopSound(soundId)
+        }
+        GMLValue.ZERO
+    }
+    f["sound_stop_all"] = { v, _ ->
+        v.runner.audio.stopAll()
+        GMLValue.ZERO
+    }
+    f["sound_is_playing"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId == null) {
+            GMLValue.FALSE
+        } else {
+            GMLValue.of(v.runner.audio.isSoundPlaying(soundId))
+        }
+    }
+    f["sound_volume"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId != null) {
+            val gain = args.getOrNull(1)?.toReal()?.toFloat() ?: 1.0f
+            v.runner.audio.setSoundGain(soundId, gain)
+        }
+        GMLValue.ZERO
+    }
+    f["sound_loop"] = { v, args ->
+        val soundId = args.getOrNull(0)?.toInt()
+        if (soundId == null) {
+            GMLValue.ZERO
+        } else {
+            GMLValue.of(v.runner.audio.playSound(soundId, true).toDouble())
+        }
     }
 
-    // Undertale-specific audio stubs
-    for (name in listOf(
-        "caster_load", "caster_play", "caster_stop", "caster_is_playing",
-        "caster_loop", "caster_volume", "caster_position",
-        "caster_free", "caster_set_volume", "caster_create",
-    )) {
-        f[name] = { _, _ -> GMLValue.ZERO }
+    // Undertale-specific audio (caster_*)
+    f["caster_create"] = { v, args ->
+        val name = args.getOrNull(0)?.toStr()
+        if (name == null) {
+            GMLValue.ZERO
+        } else {
+            GMLValue.of(v.runner.audio.createStream(name).toDouble())
+        }
+    }
+    f["caster_load"] = { v, args ->
+        val name = args.getOrNull(0)?.toStr()
+        if (name == null) {
+            GMLValue.ZERO
+        } else {
+            GMLValue.of(v.runner.audio.createStream(name).toDouble())
+        }
+    }
+    f["caster_play"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        if (handleOrSound == null) {
+            GMLValue.ZERO
+        } else {
+            val volume = args.getOrNull(1)?.toReal()?.toFloat()
+            val loop = args.getOrNull(2)?.toBool() ?: false
+            GMLValue.of(v.runner.audio.playCaster(handleOrSound, loop, volume).toDouble())
+        }
+    }
+    f["caster_play_l"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        if (handleOrSound == null) {
+            GMLValue.ZERO
+        } else {
+            val volume = args.getOrNull(1)?.toReal()?.toFloat()
+            val loop = args.getOrNull(2)?.toBool() ?: true
+            GMLValue.of(v.runner.audio.playCaster(handleOrSound, loop, volume).toDouble())
+        }
+    }
+    f["caster_loop"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        if (handleOrSound == null) {
+            GMLValue.ZERO
+        } else {
+            val volume = args.getOrNull(1)?.toReal()?.toFloat()
+            val loop = args.getOrNull(2)?.toBool() ?: true
+            GMLValue.of(v.runner.audio.playCaster(handleOrSound, loop, volume).toDouble())
+        }
+    }
+    f["caster_stop"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        v.runner.audio.stopCaster(handleOrSound)
+        GMLValue.ZERO
+    }
+    f["caster_pause"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        if (handleOrSound != null) {
+            v.runner.audio.pauseSound(handleOrSound)
+        }
+        GMLValue.ZERO
+    }
+    f["caster_resume"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        if (handleOrSound != null) {
+            v.runner.audio.resumeSound(handleOrSound)
+        }
+        GMLValue.ZERO
+    }
+    f["caster_is_playing"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        if (handleOrSound == null) {
+            GMLValue.FALSE
+        } else {
+            GMLValue.of(v.runner.audio.isSoundPlaying(handleOrSound))
+        }
+    }
+    f["caster_get_volume"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        if (handleOrSound == null) {
+            GMLValue.ZERO
+        } else {
+            GMLValue.of(v.runner.audio.getSoundGain(handleOrSound).toDouble())
+        }
+    }
+    f["caster_get_pitch"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        if (handleOrSound == null) {
+            GMLValue.of(1.0)
+        } else {
+            GMLValue.of(v.runner.audio.getSoundPitch(handleOrSound).toDouble())
+        }
+    }
+    f["caster_set_volume"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        if (handleOrSound != null) {
+            val gain = args.getOrNull(1)?.toReal()?.toFloat() ?: 1.0f
+            v.runner.audio.setSoundGain(handleOrSound, gain)
+        }
+        GMLValue.ZERO
+    }
+    f["caster_volume"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        if (handleOrSound != null) {
+            val gain = args.getOrNull(1)?.toReal()?.toFloat() ?: 1.0f
+            v.runner.audio.setSoundGain(handleOrSound, gain)
+        }
+        GMLValue.ZERO
+    }
+    f["caster_set_pitch"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        if (handleOrSound != null) {
+            val pitch = args.getOrNull(1)?.toReal()?.toFloat() ?: 1.0f
+            v.runner.audio.setSoundPitch(handleOrSound, pitch)
+        }
+        GMLValue.ZERO
+    }
+    f["caster_set_panning"] = { v, args ->
+        val handleOrSound = args.getOrNull(0)?.toInt()
+        if (handleOrSound != null) {
+            val pan = args.getOrNull(1)?.toReal()?.toFloat() ?: 0.0f
+            v.runner.audio.setPanning(handleOrSound, pan)
+        }
+        GMLValue.ZERO
+    }
+    f["caster_position"] = { _, _ -> GMLValue.ZERO }
+    f["caster_free"] = { v, args ->
+        val handle = args.getOrNull(0)?.toInt()
+        if (handle != null) {
+            v.runner.audio.destroyStream(handle)
+        }
+        GMLValue.ZERO
     }
 
     // ========== Type checking ==========

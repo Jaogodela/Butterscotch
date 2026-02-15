@@ -1,6 +1,7 @@
 package com.mrpowergamerbr.butterscotch.runtime
 
 import com.mrpowergamerbr.butterscotch.Butterscotch
+import com.mrpowergamerbr.butterscotch.audio.AudioEngine
 import com.mrpowergamerbr.butterscotch.data.GameData
 import com.mrpowergamerbr.butterscotch.data.RoomData
 import com.mrpowergamerbr.butterscotch.graphics.Renderer
@@ -13,6 +14,7 @@ class GameRunner(
     val gameData: GameData,
     val vm: VM,
     val renderer: Renderer,
+    val audio: AudioEngine,
     val initialRngSeed: Long,
     val alwaysUseInitialRngSeed: Boolean
 ) {
@@ -91,6 +93,7 @@ class GameRunner(
 
     fun step() {
         frameCount++
+        audio.setFrame(frameCount)
 
         // Playback: override all input state from recording
         val inputPlayback = this.inputPlayback
@@ -245,6 +248,8 @@ class GameRunner(
 
         // Remove destroyed instances
         instances.removeAll { it.destroyed }
+
+        audio.update()
     }
 
     fun clearPerFrameInput() {
@@ -672,6 +677,7 @@ class GameRunner(
 
         // Fire Room End for all instances
         dispatchEvent(EVENT_OTHER, OTHER_ROOM_END)
+        audio.onRoomChange()
 
         // Save room state if current room is persistent
         val leavingRoomIndex = currentRoomIndex

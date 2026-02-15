@@ -4,6 +4,8 @@ import com.mrpowergamerbr.butterscotch.Butterscotch
 import com.mrpowergamerbr.butterscotch.data.GameData
 import com.mrpowergamerbr.butterscotch.runtime.GameRunner
 import com.mrpowergamerbr.butterscotch.runtime.Instance
+import java.io.FileWriter
+import java.io.PrintWriter
 
 class DecodedCode(
     val instructions: List<Instruction>,
@@ -895,6 +897,10 @@ class VM(val gameData: GameData) {
 
     var traceCodeEntry = ""
     private val unknownFunctions = mutableSetOf<String>()
+    private val traceAudioCalls = System.getenv("BUTTERSCOTCH_AUDIO_TRACE") == "1" ||
+        System.getenv("BUTTERSCOTCH_TRACE_AUDIO_CALLS") == "1"
+    private val audioLogPath = System.getenv("BUTTERSCOTCH_AUDIO_LOG")
+    private val audioLogWriter = audioLogPath?.let { PrintWriter(FileWriter(it, true), true) }
 
     // Current execution context (set before calling builtins so they can access self/other)
     var currentSelf: Instance? = null
@@ -906,6 +912,14 @@ class VM(val gameData: GameData) {
             if (Butterscotch.traceCalls.contains("*") || objectData.name in Butterscotch.traceCalls) {
                 println("  CALL (${objectData.name}): $name(${args.joinToString { it.toStr().take(30) }})")
             }
+        }
+        if (traceAudioCalls && (name.startsWith("audio_") || name.startsWith("caster_") || name.startsWith("sound_"))) {
+            val objectData = self.getObjectData(this)
+            val frame = runner.frameCount
+            println("  [AUDIO CALL] f=$frame obj=${objectData.name} name=$name args=${args.joinToString { it.toStr().take(60) }}")
+            audioLogWriter?.println(
+                "CALL\tframe=$frame\tobj=${objectData.name}\tname=$name\targs=${args.joinToString { it.toStr().take(120) }}"
+            )
         }
 
         // Set execution context so builtins can access self/other

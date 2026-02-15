@@ -206,6 +206,29 @@ class PathData(
     val points: List<PathPointData>,
 )
 
+enum class AudioFormat {
+    WAV,
+    OGG,
+    UNKNOWN,
+}
+
+class AudioData(
+    val dataOffset: Int,
+    val length: Int,
+    val format: AudioFormat,
+)
+
+class SoundData(
+    val name: String,
+    val kind: Int,
+    val extension: String,
+    val fileName: String,
+    val flags: Int,
+    val volume: Float,
+    val groupId: Int,
+    val audioId: Int,
+)
+
 class GameData(
     val gen8: Gen8Info,
     val strings: List<String>,
@@ -222,4 +245,6 @@ class GameData(
     val scripts: List<ScriptData>,
     val fonts: List<FontData>,
     val fileBuffer: java.nio.ByteBuffer,
+    val sounds: List<SoundData>,
+    val audioData: List<AudioData>,
 )

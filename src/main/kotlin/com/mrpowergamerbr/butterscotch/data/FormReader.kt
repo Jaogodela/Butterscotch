@@ -44,6 +44,8 @@ class FormReader(private val filePath: String) {
         val backgrounds = parseBgnd(chunks["BGND"]!!)
         val paths = parsePath(chunks["PATH"]!!)
         val fonts = parseFont(chunks["FONT"]!!)
+        val sounds = chunks["SOND"]?.let { parseSond(it) } ?: emptyList()
+        val audioData = chunks["AUDO"]?.let { parseAudo(it) } ?: emptyList()
         val code = parseCode(chunks["CODE"]!!)
         val objects = parseObjt(chunks["OBJT"]!!, code)
         val rooms = parseRoom(chunks["ROOM"]!!)
@@ -53,6 +55,7 @@ class FormReader(private val filePath: String) {
 
         println("Loaded: ${sprites.size} sprites, ${objects.size} objects, ${rooms.size} rooms, ${code.size} code entries")
         println("  ${variables.size} variables, ${functions.size} functions, ${scripts.size} scripts, ${fonts.size} fonts, ${paths.size} paths")
+        println("  ${sounds.size} sounds, ${audioData.size} audio entries")
 
         return GameData(
             gen8 = gen8,
@@ -70,6 +73,8 @@ class FormReader(private val filePath: String) {
             scripts = scripts,
             fonts = fonts,
             fileBuffer = buf,
+            sounds = sounds,
+            audioData = audioData,
         )
     }
 
@@ -373,6 +378,69 @@ class FormReader(private val filePath: String) {
 
         println("  FONT: $count fonts")
         return fonts
+    }
+
+    // ========== SOND ==========
+    private fun parseSond(chunk: Pair<Int, Int>): List<SoundData> {
+        val (d, _) = chunk
+        val count = buf.getInt(d)
+        val sounds = ArrayList<SoundData>(count)
+
+        for (i in 0 until count) {
+            val ptr = buf.getInt(d + 4 + i * 4)
+            val namePtr = buf.getInt(ptr)
+            val kind = buf.getInt(ptr + 4)
+            val extPtr = buf.getInt(ptr + 8)
+            val filePtr = buf.getInt(ptr + 12)
+            val flags = buf.getInt(ptr + 16)
+            val volume = buf.getFloat(ptr + 20)
+            val groupId = buf.getInt(ptr + 24)
+            val audioId = buf.getInt(ptr + 32)
+
+            sounds.add(
+                SoundData(
+                    name = readStringRef(namePtr),
+                    kind = kind,
+                    extension = readStringRef(extPtr),
+                    fileName = readStringRef(filePtr),
+                    flags = flags,
+                    volume = volume,
+                    groupId = groupId,
+                    audioId = audioId,
+                )
+            )
+        }
+
+        println("  SOND: $count sounds")
+        return sounds
+    }
+
+    // ========== AUDO ==========
+    private fun parseAudo(chunk: Pair<Int, Int>): List<AudioData> {
+        val (d, _) = chunk
+        val count = buf.getInt(d)
+        val audios = ArrayList<AudioData>(count)
+
+        for (i in 0 until count) {
+            val ptr = buf.getInt(d + 4 + i * 4)
+            val length = buf.getInt(ptr)
+            val dataOffset = ptr + 4
+            val format = when (readTag(dataOffset)) {
+                "RIFF" -> AudioFormat.WAV
+                "OggS" -> AudioFormat.OGG
+                else -> AudioFormat.UNKNOWN
+            }
+            audios.add(
+                AudioData(
+                    dataOffset = dataOffset,
+                    length = length,
+                    format = format,
+                )
+            )
+        }
+
+        println("  AUDO: $count audio entries")
+        return audios
     }
 
     // ========== CODE ==========
