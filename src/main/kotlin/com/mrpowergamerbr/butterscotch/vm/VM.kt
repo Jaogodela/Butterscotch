@@ -897,9 +897,10 @@ class VM(val gameData: GameData) {
 
     var traceCodeEntry = ""
     private val unknownFunctions = mutableSetOf<String>()
-    private val traceAudioCalls = System.getenv("BUTTERSCOTCH_AUDIO_TRACE") == "1" ||
+    private val traceAudioCalls = Butterscotch.audioTrace ||
+        System.getenv("BUTTERSCOTCH_AUDIO_TRACE") == "1" ||
         System.getenv("BUTTERSCOTCH_TRACE_AUDIO_CALLS") == "1"
-    private val audioLogPath = System.getenv("BUTTERSCOTCH_AUDIO_LOG")
+    private val audioLogPath = Butterscotch.audioLogPath ?: System.getenv("BUTTERSCOTCH_AUDIO_LOG")
     private val audioLogWriter = audioLogPath?.let { PrintWriter(FileWriter(it, true), true) }
 
     // Current execution context (set before calling builtins so they can access self/other)
@@ -916,9 +917,10 @@ class VM(val gameData: GameData) {
         if (traceAudioCalls && (name.startsWith("audio_") || name.startsWith("caster_") || name.startsWith("sound_"))) {
             val objectData = self.getObjectData(this)
             val frame = runner.frameCount
-            println("  [AUDIO CALL] f=$frame obj=${objectData.name} name=$name args=${args.joinToString { it.toStr().take(60) }}")
+            val message = "call frame=$frame obj=${objectData.name} name=$name args=${args.joinToString { it.toStr().take(60) }}"
+            println("  [AUDIO] $message")
             audioLogWriter?.println(
-                "CALL\tframe=$frame\tobj=${objectData.name}\tname=$name\targs=${args.joinToString { it.toStr().take(120) }}"
+                "[AUDIO] $message"
             )
         }
 

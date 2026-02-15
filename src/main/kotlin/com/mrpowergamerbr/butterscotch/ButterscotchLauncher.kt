@@ -35,6 +35,10 @@ class ButterscotchCLICommand : CliktCommand(name = "butterscotch") {
     private val playbackInputs by option("--playback-inputs", help = "Playback inputs from JSON file")
     private val vsync by option("--vsync", help = "Enable VSync, you must disable VSync if you are using a high speed rate for the game").boolean().default(true)
     private val rngSeed by option("--seed", help = "RNG seed for deterministic playback, randomize calls will always use this set seed").long()
+    private val audioDir by option("--audio-dir", help = "Base directory for external audio files").multiple()
+    private val audioTrace by option("--audio-trace", help = "Enable audio trace logging").flag()
+    private val audioLog by option("--audio-log", help = "Write audio trace logs to a file")
+    private val audioNoRoomStop by option("--audio-no-room-stop", help = "Do not stop music on room change").flag()
 
     override fun run() {
         Butterscotch.debugObj = debugObj.toSet()
@@ -96,7 +100,11 @@ class ButterscotchCLICommand : CliktCommand(name = "butterscotch") {
             recordInputsPath = recordInputs,
             playbackInputsPath = playbackInputs,
             vsync = vsync,
-            rngSeed = rngSeed
+            rngSeed = rngSeed,
+            audioDirs = audioDir,
+            audioTrace = audioTrace,
+            audioLogPath = audioLog,
+            stopCasterOnRoomChange = !audioNoRoomStop,
         ).run()
     }
 }

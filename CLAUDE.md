@@ -13,7 +13,7 @@ Run Undertale v1.08 as far as possible using a custom bytecode interpreter with 
 - JOML for math
 - Clikt (CLI argument parsing)
 - kotlinx-serialization-json (input recording/playback)
-- No audio support (all audio functions are stubbed)
+- Audio support via OpenAL (WAV/OGG) with external music overrides
 
 ## Key Facts
 
@@ -75,6 +75,10 @@ Butterscotch uses [Clikt](https://ajalt.github.io/clikt/) for CLI argument parsi
 | `--speed <multiplier>` | Game speed multiplier (e.g. `2.0` = twice as fast, default `1.0`) |
 | `--record-inputs <path>` | Record keyboard inputs to a JSON file |
 | `--playback-inputs <path>` | Playback keyboard inputs from a JSON file |
+| `--audio-dir <path>` | Base directory for external audio files (repeatable) |
+| `--audio-trace` | Enable audio trace logging |
+| `--audio-log <path>` | Write audio trace logs to a file |
+| `--audio-no-room-stop` | Do not stop music on room change |
 
 ### Debug Mode Keys
 

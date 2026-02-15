@@ -20,15 +20,23 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-class AudioEngine(private val gameData: GameData) {
+class AudioEngine(
+    private val gameData: GameData,
+    audioDirs: List<String> = emptyList(),
+    traceOverride: Boolean = false,
+    audioLogPathOverride: String? = null,
+    stopCasterOnRoomChangeOverride: Boolean? = null,
+) {
     private var device: Long = MemoryUtil.NULL
     private var context: Long = MemoryUtil.NULL
     private var enabled = false
-    private val trace = System.getenv("BUTTERSCOTCH_AUDIO_TRACE") == "1"
-    private val audioLogPath = System.getenv("BUTTERSCOTCH_AUDIO_LOG")
+    private val trace = traceOverride || System.getenv("BUTTERSCOTCH_AUDIO_TRACE") == "1"
+    private val audioLogPath = audioLogPathOverride ?: System.getenv("BUTTERSCOTCH_AUDIO_LOG")
     private val audioLogWriter = audioLogPath?.let { PrintWriter(FileWriter(it, true), true) }
     private var currentFrame = 0
-    private val stopCasterOnRoomChange = System.getenv("BUTTERSCOTCH_STOP_CASTER_ON_ROOM_CHANGE") != "0"
+    private val stopCasterOnRoomChange = stopCasterOnRoomChangeOverride
+        ?: (System.getenv("BUTTERSCOTCH_STOP_CASTER_ON_ROOM_CHANGE") != "0")
+    private val baseDirs: List<Path> = buildBaseDirs(audioDirs)
 
     private val buffers = IntArray(gameData.audioData.size)
     private val sourceHandles = mutableMapOf<Int, Int>()
@@ -114,9 +122,7 @@ class AudioEngine(private val gameData: GameData) {
         if (!enabled) return 0
         val externalStreamBuffer = externalStreamBuffers[soundId]
         if (externalStreamBuffer != null) {
-            if (trace) {
-                println("[AUDIO] play external handle=$soundId loop=$loop")
-            }
+            logAudio("play external handle=$soundId loop=$loop")
             logEvent(
                 "play",
                 "handle=$soundId external=true loop=$loop"
@@ -132,18 +138,14 @@ class AudioEngine(private val gameData: GameData) {
                 val bufferId = decodeExternalFileToBuffer(path)
                 if (bufferId != null) {
                     externalSoundBuffers[resolvedSoundId] = bufferId
-                    if (trace) {
-                        println("[AUDIO] external override soundId=$resolvedSoundId name=${sound.name} path=$path")
-                    }
+                    logAudio("external override soundId=$resolvedSoundId name=${sound.name} path=$path")
                     logEvent("external_override", "soundId=$resolvedSoundId name=${sound.name} path=$path")
                     bufferId
                 } else null
             } else null
         }
         if (externalSoundBuffer != null) {
-            if (trace) {
-                println("[AUDIO] play external soundId=$soundId resolved=$resolvedSoundId name=${sound.name} file=${sound.fileName} loop=$loop")
-            }
+            logAudio("play external soundId=$soundId resolved=$resolvedSoundId name=${sound.name} file=${sound.fileName} loop=$loop")
             logEvent(
                 "play",
                 "soundId=$soundId resolved=$resolvedSoundId name=${sound.name} file=${sound.fileName} external=true loop=$loop"
@@ -153,10 +155,8 @@ class AudioEngine(private val gameData: GameData) {
 
         val audioId = sound.audioId
         if (audioId !in gameData.audioData.indices) return 0
-        if (trace) {
-            val fmt = gameData.audioData[audioId].format
-            println("[AUDIO] play soundId=$soundId resolved=$resolvedSoundId name=${sound.name} file=${sound.fileName} audioId=$audioId fmt=$fmt loop=$loop")
-        }
+        val fmt = gameData.audioData[audioId].format
+        logAudio("play soundId=$soundId resolved=$resolvedSoundId name=${sound.name} file=${sound.fileName} audioId=$audioId fmt=$fmt loop=$loop")
         logEvent(
             "play",
             "soundId=$soundId resolved=$resolvedSoundId name=${sound.name} file=${sound.fileName} audioId=$audioId loop=$loop"
@@ -177,11 +177,8 @@ class AudioEngine(private val gameData: GameData) {
             return
         }
         val resolvedSoundId = resolveSoundId(soundId) ?: return
-        if (trace) {
-            val sound = gameData.sounds.getOrNull(resolvedSoundId)
-            println("[AUDIO] stop soundId=$soundId resolved=$resolvedSoundId name=${sound?.name ?: "?"}")
-        }
         val sound = gameData.sounds.getOrNull(resolvedSoundId)
+        logAudio("stop soundId=$soundId resolved=$resolvedSoundId name=${sound?.name ?: "?"}")
         logEvent(
             "stop",
             "soundId=$soundId resolved=$resolvedSoundId name=${sound?.name ?: "?"}"
@@ -214,10 +211,8 @@ class AudioEngine(private val gameData: GameData) {
             return AL10.alGetSourcei(directSource, AL10.AL_SOURCE_STATE) == AL10.AL_PLAYING
         }
         val resolvedSoundId = resolveSoundId(soundId) ?: return false
-        if (trace) {
-            val sound = gameData.sounds.getOrNull(resolvedSoundId)
-            println("[AUDIO] isPlaying soundId=$soundId resolved=$resolvedSoundId name=${sound?.name ?: "?"}")
-        }
+        val sound = gameData.sounds.getOrNull(resolvedSoundId)
+        logAudio("isPlaying soundId=$soundId resolved=$resolvedSoundId name=${sound?.name ?: "?"}")
         val handles = soundToSources[resolvedSoundId] ?: return false
         for (handle in handles) {
             val source = sourceHandles[handle] ?: continue
@@ -395,18 +390,13 @@ class AudioEngine(private val gameData: GameData) {
             val bufferId = decodeExternalFileToBuffer(externalPath) ?: return 0
             val handle = nextStreamId++
             externalStreamBuffers[handle] = bufferId
-            if (trace) {
-                println("[AUDIO] create_stream external file=$fileName path=$externalPath handle=$handle")
-            }
+            logAudio("create_stream external file=$fileName path=$externalPath handle=$handle")
             logEvent("create_stream", "file=$fileName path=$externalPath handle=$handle external=true")
             return handle
         }
         val resolvedSoundId = resolveSoundIdByFile(fileName) ?: return 0
-        if (trace) {
-            val sound = gameData.sounds.getOrNull(resolvedSoundId)
-            println("[AUDIO] create_stream file=$fileName resolved=$resolvedSoundId name=${sound?.name ?: "?"} audioId=${sound?.audioId}")
-        }
         val sound = gameData.sounds.getOrNull(resolvedSoundId)
+        logAudio("create_stream file=$fileName resolved=$resolvedSoundId name=${sound?.name ?: "?"} audioId=${sound?.audioId}")
         logEvent(
             "create_stream",
             "file=$fileName resolved=$resolvedSoundId name=${sound?.name ?: "?"} audioId=${sound?.audioId}"
@@ -424,18 +414,13 @@ class AudioEngine(private val gameData: GameData) {
             soundGainOverrides.remove(handle)
             soundPitchOverrides.remove(handle)
             stopSound(handle)
-            if (trace) {
-                println("[AUDIO] destroy_stream external handle=$handle")
-            }
+            logAudio("destroy_stream external handle=$handle")
             logEvent("destroy_stream", "handle=$handle external=true")
             return
         }
         val soundId = streamToSound.remove(handle) ?: return
-        if (trace) {
-            val sound = gameData.sounds.getOrNull(soundId)
-            println("[AUDIO] destroy_stream handle=$handle resolved=$soundId name=${sound?.name ?: "?"}")
-        }
         val sound = gameData.sounds.getOrNull(soundId)
+        logAudio("destroy_stream handle=$handle resolved=$soundId name=${sound?.name ?: "?"}")
         logEvent("destroy_stream", "handle=$handle resolved=$soundId name=${sound?.name ?: "?"}")
         stopSound(soundId)
     }
@@ -445,8 +430,28 @@ class AudioEngine(private val gameData: GameData) {
         return (gain * masterGain).coerceIn(0.0f, 1.0f)
     }
 
+    private fun logAudio(message: String) {
+        if (trace) {
+            println("  [AUDIO] $message")
+        }
+        audioLogWriter?.println("[AUDIO] $message")
+    }
+
     private fun logEvent(kind: String, details: String) {
-        audioLogWriter?.println("AUDIO\tframe=$currentFrame\tkind=$kind\t$details")
+        val extra = if (details.isBlank()) "" else " $details"
+        logAudio("frame=$currentFrame kind=$kind$extra")
+    }
+
+    private fun buildBaseDirs(audioDirs: List<String>): List<Path> {
+        val dirs = ArrayList<Path>()
+        for (dir in audioDirs) {
+            if (dir.isNotBlank()) {
+                dirs.add(Paths.get(dir))
+            }
+        }
+        dirs.add(Paths.get("."))
+        dirs.add(Paths.get("undertale"))
+        return dirs
     }
 
     private fun resolveSoundId(soundId: Int): Int? {
@@ -562,9 +567,7 @@ class AudioEngine(private val gameData: GameData) {
         }
         if (bySndFallback >= 0) return bySndFallback
 
-        if (trace) {
-            println("[AUDIO] create_stream not found for file=$name (normalized=$lower)")
-        }
+        logAudio("create_stream not found for file=$name (normalized=$lower)")
         return null
     }
 
@@ -594,9 +597,7 @@ class AudioEngine(private val gameData: GameData) {
         }
         if (!ok) {
             AL10.alDeleteBuffers(bufferId)
-            if (trace) {
-                println("[AUDIO] failed to decode audioId=$audioId format=${audio.format}")
-            }
+            logAudio("failed to decode audioId=$audioId format=${audio.format}")
             return null
         }
         buffers[audioId] = bufferId
@@ -646,9 +647,7 @@ class AudioEngine(private val gameData: GameData) {
         }
 
         if (dataOffset < 0 || dataSize <= 0 || channels <= 0 || sampleRate <= 0 || bits != 16) {
-            if (trace) {
-                println("[AUDIO] WAV unsupported: channels=$channels rate=$sampleRate bits=$bits dataOffset=$dataOffset dataSize=$dataSize")
-            }
+            logAudio("WAV unsupported: channels=$channels rate=$sampleRate bits=$bits dataOffset=$dataOffset dataSize=$dataSize")
             return false
         }
         val format = when (channels) {
@@ -699,14 +698,16 @@ class AudioEngine(private val gameData: GameData) {
         if (normalizedInput.isEmpty()) return null
 
         val candidates = ArrayList<Path>()
-        candidates.add(Paths.get(normalizedInput))
-        candidates.add(Paths.get("undertale").resolve(normalizedInput))
+        for (base in baseDirs) {
+            candidates.add(base.resolve(normalizedInput))
+        }
 
         val baseFileName = normalizedInput.substringAfterLast('/')
         val commonDirs = listOf("music", "audio", "sound", "sounds", "sfx")
         for (dir in commonDirs) {
-            candidates.add(Paths.get(dir).resolve(baseFileName))
-            candidates.add(Paths.get("undertale").resolve(dir).resolve(baseFileName))
+            for (base in baseDirs) {
+                candidates.add(base.resolve(dir).resolve(baseFileName))
+            }
         }
 
         val fileName = normalizedInput.substringAfterLast('/')
@@ -717,11 +718,11 @@ class AudioEngine(private val gameData: GameData) {
         val prefixed = listOf("mus_$noExt.$ext", "snd_$noExt.$ext")
         for (p in prefixed) {
             val rel = if (dir.isEmpty()) p else "$dir/$p"
-            candidates.add(Paths.get(rel))
-            candidates.add(Paths.get("undertale").resolve(rel))
-            for (cdir in commonDirs) {
-                candidates.add(Paths.get(cdir).resolve(p))
-                candidates.add(Paths.get("undertale").resolve(cdir).resolve(p))
+            for (base in baseDirs) {
+                candidates.add(base.resolve(rel))
+                for (cdir in commonDirs) {
+                    candidates.add(base.resolve(cdir).resolve(p))
+                }
             }
         }
 
@@ -746,17 +747,13 @@ class AudioEngine(private val gameData: GameData) {
             }
             if (!ok) {
                 AL10.alDeleteBuffers(bufferId)
-                if (trace) {
-                    println("[AUDIO] external decode failed path=$path tag=$tag")
-                }
+                logAudio("external decode failed path=$path tag=$tag")
                 null
             } else {
                 bufferId
             }
         } catch (e: Exception) {
-            if (trace) {
-                println("[AUDIO] external decode error path=$path err=${e.message}")
-            }
+            logAudio("external decode error path=$path err=${e.message}")
             null
         }
     }

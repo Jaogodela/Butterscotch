@@ -27,7 +27,11 @@ class Butterscotch(
     private val recordInputsPath: String? = null,
     private val playbackInputsPath: String? = null,
     private val vsync: Boolean,
-    private val rngSeed: Long?
+    private val rngSeed: Long?,
+    private val audioDirs: List<String> = emptyList(),
+    private val audioTrace: Boolean = false,
+    private val audioLogPath: String? = null,
+    private val stopCasterOnRoomChange: Boolean = true,
 ) {
     companion object {
         // yay static abuse
@@ -43,6 +47,8 @@ class Butterscotch(
         var drawMasks = false
         var alwaysLogUnknownInstructions = false
         var debug = false
+        var audioTrace = false
+        var audioLogPath: String? = null
     }
 
     private var window: Long = 0
@@ -101,7 +107,16 @@ class Butterscotch(
         renderer.framebufferScaleY = framebufferScaleY
         renderer.initialize()
 
-        audio = AudioEngine(gameData)
+        audio = AudioEngine(
+            gameData = gameData,
+            audioDirs = audioDirs,
+            traceOverride = audioTrace,
+            audioLogPathOverride = audioLogPath,
+            stopCasterOnRoomChangeOverride = stopCasterOnRoomChange,
+        )
+
+        Butterscotch.audioTrace = this.audioTrace
+        Butterscotch.audioLogPath = this.audioLogPath
 
         val vm = VM(gameData)
         registerBuiltins(vm)
