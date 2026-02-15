@@ -132,6 +132,9 @@ cache/
 emotes.conf
 loritta.conf
 
+#Screenshots
+/screenshots/
+
 #Game file
 /undertale/
 
