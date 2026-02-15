@@ -26,6 +26,10 @@ Butterscotch has some CLI parameters and debug features that are useful when deb
 * `--draw-masks`: Draw masks (collisions) overlays on screen. Green overlays are masks without precise collisions (AABB), while blue overlays are masks with precise collisions.
 * `--always-log-unknown-instructions`: Always log unknown instructions instead of only logging once
 * `--seed`: Forces the game to always use a specific RNG seed, even if the game sets a custom seed with `random_set_seed` or if `randomize` is called, example `--seed 40028922`. Useful for reproducing bugs.
+* `--audio-dir`: Base directory for external audio files. Can be used multiple times.
+* `--audio-trace`: Enables audio trace logging.
+* `--audio-log`: Writes audio trace logs to a file.
+* `--audio-no-room-stop`: Do not stop music on room change.
 
 ### Debug Features
 
